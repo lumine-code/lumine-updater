@@ -1,0 +1,47 @@
+{
+  "name": "lumine-updater",
+  "author": "lumine-code",
+  "version": "1.0.0",
+  "description": "Detect new Lumine releases on launch and notify when an update is available.",
+  "keywords": [
+    "release",
+    "upgrade",
+    "notification",
+    "launch",
+    "auto-update"
+  ],
+  "repository": "https://github.com/lumine-code/lumine-updater",
+  "bugs": {
+    "url": "https://github.com/lumine-code/lumine-updater/issues"
+  },
+  "license": "MIT",
+  "main": "./src/main.js",
+  "engines": {
+    "lumine": "^1.0.0"
+  },
+  "scripts": {
+    "test": "lumine --test spec",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "configSchema": {
+    "checkForUpdatesOnLaunch": {
+      "title": "Check For Updates On Launch",
+      "description": "If Lumine Updater should check for an update to Lumine as soon as Lumine launches.",
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "dependencies": {
+    "shelljs": "^0.10.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^18.2.2",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.6"
+  }
+}
