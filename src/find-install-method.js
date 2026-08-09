@@ -65,19 +65,19 @@ const INSTALL_CHANNELS = {
 async function main() {
   let returnValue = "";
 
-  if (atom.window.isDevMode()) {
+  if (lumine.window.isDevMode()) {
     returnValue = "Developer Mode";
   }
 
-  if (atom.window.isSafeMode()) {
+  if (lumine.window.isSafeMode()) {
     returnValue = "Safe Mode";
   }
 
-  if (atom.window.isSpecMode()) {
+  if (lumine.window.isSpecMode()) {
     returnValue = "Spec Mode";
   }
 
-  if (atom.app.getReleaseChannel() !== "stable") {
+  if (lumine.app.getReleaseChannel() !== "stable") {
     // This would only be the case if
     //
     // * `npm start` was used by a developer,

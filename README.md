@@ -15,7 +15,7 @@ To install `lumine-updater` search for _lumine-updater_ in the Install pane of t
 
 ## Commands
 
-Commands available in `atom-workspace`:
+Commands available in `lumine-workspace`:
 
 - `lumine-updater:check-for-update`: check for updates and notify if a newer version is available,
 - `lumine-updater:clear-cache`: clear the cached update state and re-enable suppressed checks.
