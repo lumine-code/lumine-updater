@@ -17,7 +17,7 @@ class LumineUpdater {
         },
         "lumine-updater:clear-cache": () => {
           this.cache.empty("last-update-check");
-          this.cache.empty(`installMethod.${atom.getVersion()}`);
+          this.cache.empty(`installMethod.${atom.app.getVersion()}`);
         },
       }),
     );
@@ -53,7 +53,7 @@ class LumineUpdater {
 
     // Null means that there is no previous check, or the last check expired
     let latestVersion = await this.findNewestRelease();
-    let shouldUpdate = !atom.versionSatisfies(`>= ${latestVersion}`);
+    let shouldUpdate = !atom.app.versionSatisfies(`>= ${latestVersion}`);
 
     if (cachedUpdateCheck?.latestVersion === latestVersion && !cachedUpdateCheck?.shouldUpdate) {
       // The user has already been notified about this version and told us not
@@ -87,9 +87,10 @@ class LumineUpdater {
     findInstallMethod ??= require("./find-install-method.js");
 
     let installMethod =
-      this.cache.getCacheItem(`installMethod.${atom.getVersion()}`) ?? (await findInstallMethod());
+      this.cache.getCacheItem(`installMethod.${atom.app.getVersion()}`) ??
+      (await findInstallMethod());
 
-    this.cache.setCacheItem(`installMethod.${atom.getVersion()}`, installMethod);
+    this.cache.setCacheItem(`installMethod.${atom.app.getVersion()}`, installMethod);
 
     let objButtonForInstallMethod = this.getObjButtonForInstallMethod(installMethod);
     let notificationDetailText = this.getNotificationText(installMethod, latestVersion);
@@ -187,7 +188,7 @@ class LumineUpdater {
       e.preventDefault();
       let latestVersion = this.cache.getCacheItem("last-update-check")?.latestVersion;
       let tagSegment = latestVersion ? `tag/${latestVersion}` : "";
-      atom.openExternal(`https://github.com/lumine-code/lumine/releases/${tagSegment}`);
+      atom.shell.openExternal(`https://github.com/lumine-code/lumine/releases/${tagSegment}`);
     };
 
     switch (installMethod.installMethod) {

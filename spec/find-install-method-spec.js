@@ -8,7 +8,8 @@ describe("find-install-method main", async () => {
     // The atom API cannot be mocked from a package, but a test run is by
     // definition in spec mode. A non-stable release channel (a -dev version)
     // outranks it, so derive the expectation instead of assuming one flavour.
-    const expected = atom.getReleaseChannel() !== "stable" ? "Custom Release Channel" : "Spec Mode";
+    const expected =
+      atom.app.getReleaseChannel() !== "stable" ? "Custom Release Channel" : "Spec Mode";
 
     let method = await findInstallMethod();
 
