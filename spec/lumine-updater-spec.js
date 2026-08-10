@@ -37,8 +37,8 @@ describe("LumineUpdater", () => {
     });
 
     afterEach(() => {
-      pack.mainModule.notifyAboutUpdate.reset();
-      pack.mainModule.notifyAboutCurrent.reset();
+      pack.mainModule.notifyAboutUpdate.calls.reset();
+      pack.mainModule.notifyAboutCurrent.calls.reset();
     });
 
     it("signals that the user should update", async () => {
