@@ -18,7 +18,7 @@ describe("LumineUpdater", () => {
 
   describe("when lumine-updater:check-for-updates is triggered", () => {
     beforeEach(async () => {
-      spyOn(pack.mainModule, "checkForUpdates").andReturn(Promise.resolve());
+      spyOn(pack.mainModule, "checkForUpdates").and.returnValue(Promise.resolve());
     });
     it("triggers an update check", () => {
       lumine.commands.dispatch(workspaceElement, "lumine-updater:check-for-update");
@@ -28,12 +28,12 @@ describe("LumineUpdater", () => {
 
   describe("when the remote version is greater than ours", () => {
     beforeEach(() => {
-      spyOn(lumine.app, "getVersion").andReturn("1.0.0");
-      spyOn(pack.mainModule, "findNewestRelease").andCallFake(() => {
+      spyOn(lumine.app, "getVersion").and.returnValue("1.0.0");
+      spyOn(pack.mainModule, "findNewestRelease").and.callFake(() => {
         return "2.0.0";
       });
-      spyOn(pack.mainModule, "notifyAboutUpdate").andCallThrough();
-      spyOn(pack.mainModule, "notifyAboutCurrent").andCallThrough();
+      spyOn(pack.mainModule, "notifyAboutUpdate").and.callThrough();
+      spyOn(pack.mainModule, "notifyAboutCurrent").and.callThrough();
     });
 
     afterEach(() => {
@@ -52,8 +52,8 @@ describe("LumineUpdater", () => {
 
   describe("when the remote version is equal to ours", () => {
     beforeEach(() => {
-      spyOn(lumine.app, "getVersion").andReturn("1.0.5");
-      spyOn(pack.mainModule, "findNewestRelease").andCallFake(() => {
+      spyOn(lumine.app, "getVersion").and.returnValue("1.0.5");
+      spyOn(pack.mainModule, "findNewestRelease").and.callFake(() => {
         return "1.0.5";
       });
       spyOn(pack.mainModule, "notifyAboutUpdate");
@@ -72,12 +72,12 @@ describe("LumineUpdater", () => {
   describe("when the user tells us to ignore until the next version", () => {
     let latestVersion = "1.0.6";
     beforeEach(() => {
-      spyOn(lumine.app, "getVersion").andReturn("1.0.5");
-      spyOn(pack.mainModule, "findNewestRelease").andCallFake(() => {
+      spyOn(lumine.app, "getVersion").and.returnValue("1.0.5");
+      spyOn(pack.mainModule, "findNewestRelease").and.callFake(() => {
         return latestVersion;
       });
-      spyOn(pack.mainModule, "notifyAboutUpdate").andCallThrough();
-      spyOn(pack.mainModule, "notifyAboutCurrent").andCallThrough();
+      spyOn(pack.mainModule, "notifyAboutUpdate").and.callThrough();
+      spyOn(pack.mainModule, "notifyAboutCurrent").and.callThrough();
     });
 
     it("subsequent checks do not result in notifications", async () => {
@@ -94,7 +94,7 @@ describe("LumineUpdater", () => {
       pack.mainModule.checkForUpdates();
       await wait(200);
 
-      expect(pack.mainModule.notifyAboutUpdate.callCount).toBe(1);
+      expect(pack.mainModule.notifyAboutUpdate.calls.count()).toBe(1);
       expect(pack.mainModule.notifyAboutCurrent).not.toHaveBeenCalled();
 
       latestVersion = "1.0.7";

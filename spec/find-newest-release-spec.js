@@ -10,25 +10,25 @@ function fetchReturning({ ok = true, status = 200, body }) {
 
 describe("lumine-updater findNewestRelease", () => {
   it("returns the newest release tag", async () => {
-    spyOn(global, "fetch").andReturn(fetchReturning({ body: [{ tag_name: "1.2.3" }] }));
+    spyOn(global, "fetch").and.returnValue(fetchReturning({ body: [{ tag_name: "1.2.3" }] }));
 
     expect(await findNewestRelease()).toBe("1.2.3");
   });
 
   it("returns the sentinel version when the repository has no releases", async () => {
-    spyOn(global, "fetch").andReturn(fetchReturning({ body: [] }));
+    spyOn(global, "fetch").and.returnValue(fetchReturning({ body: [] }));
 
     expect(await findNewestRelease()).toBe("0.0.0");
   });
 
   it("returns the sentinel version for a malformed response", async () => {
-    spyOn(global, "fetch").andReturn(fetchReturning({ body: null }));
+    spyOn(global, "fetch").and.returnValue(fetchReturning({ body: null }));
 
     expect(await findNewestRelease()).toBe("0.0.0");
   });
 
   it("returns the sentinel version when the request fails", async () => {
-    spyOn(global, "fetch").andCallFake(() => Promise.reject(new Error("network failure")));
+    spyOn(global, "fetch").and.callFake(() => Promise.reject(new Error("network failure")));
 
     expect(await findNewestRelease()).toBe("0.0.0");
   });
