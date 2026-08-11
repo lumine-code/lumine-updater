@@ -77,7 +77,7 @@ async function main() {
     returnValue = "Spec Mode";
   }
 
-  if (lumine.app.getReleaseChannel() !== "stable") {
+  if (lumine.application.getReleaseChannel() !== "stable") {
     // This would only be the case if
     //
     // * `npm start` was used by a developer,

@@ -9,7 +9,7 @@ describe("find-install-method main", async () => {
     // definition in spec mode. A non-stable release channel (a -dev version)
     // outranks it, so derive the expectation instead of assuming one flavour.
     const expected =
-      lumine.app.getReleaseChannel() !== "stable" ? "Custom Release Channel" : "Spec Mode";
+      lumine.application.getReleaseChannel() !== "stable" ? "Custom Release Channel" : "Spec Mode";
 
     let method = await findInstallMethod();
 

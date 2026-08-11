@@ -17,7 +17,7 @@ class LumineUpdater {
         },
         "lumine-updater:clear-cache": () => {
           this.cache.empty("last-update-check");
-          this.cache.empty(`installMethod.${lumine.app.getVersion()}`);
+          this.cache.empty(`installMethod.${lumine.application.getVersion()}`);
         },
       }),
     );
@@ -53,7 +53,7 @@ class LumineUpdater {
 
     // Null means that there is no previous check, or the last check expired
     let latestVersion = await this.findNewestRelease();
-    let shouldUpdate = !lumine.app.versionSatisfies(`>= ${latestVersion}`);
+    let shouldUpdate = !lumine.application.versionSatisfies(`>= ${latestVersion}`);
 
     if (cachedUpdateCheck?.latestVersion === latestVersion && !cachedUpdateCheck?.shouldUpdate) {
       // The user has already been notified about this version and told us not
@@ -87,10 +87,10 @@ class LumineUpdater {
     findInstallMethod ??= require("./find-install-method.js");
 
     let installMethod =
-      this.cache.getCacheItem(`installMethod.${lumine.app.getVersion()}`) ??
+      this.cache.getCacheItem(`installMethod.${lumine.application.getVersion()}`) ??
       (await findInstallMethod());
 
-    this.cache.setCacheItem(`installMethod.${lumine.app.getVersion()}`, installMethod);
+    this.cache.setCacheItem(`installMethod.${lumine.application.getVersion()}`, installMethod);
 
     let objButtonForInstallMethod = this.getObjButtonForInstallMethod(installMethod);
     let notificationDetailText = this.getNotificationText(installMethod, latestVersion);

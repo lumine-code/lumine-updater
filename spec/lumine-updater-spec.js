@@ -28,7 +28,7 @@ describe("LumineUpdater", () => {
 
   describe("when the remote version is greater than ours", () => {
     beforeEach(() => {
-      spyOn(lumine.app, "getVersion").and.returnValue("1.0.0");
+      spyOn(lumine.application, "getVersion").and.returnValue("1.0.0");
       spyOn(pack.mainModule, "findNewestRelease").and.callFake(() => {
         return "2.0.0";
       });
@@ -52,7 +52,7 @@ describe("LumineUpdater", () => {
 
   describe("when the remote version is equal to ours", () => {
     beforeEach(() => {
-      spyOn(lumine.app, "getVersion").and.returnValue("1.0.5");
+      spyOn(lumine.application, "getVersion").and.returnValue("1.0.5");
       spyOn(pack.mainModule, "findNewestRelease").and.callFake(() => {
         return "1.0.5";
       });
@@ -72,7 +72,7 @@ describe("LumineUpdater", () => {
   describe("when the user tells us to ignore until the next version", () => {
     let latestVersion = "1.0.6";
     beforeEach(() => {
-      spyOn(lumine.app, "getVersion").and.returnValue("1.0.5");
+      spyOn(lumine.application, "getVersion").and.returnValue("1.0.5");
       spyOn(pack.mainModule, "findNewestRelease").and.callFake(() => {
         return latestVersion;
       });
