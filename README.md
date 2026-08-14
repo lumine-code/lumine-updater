@@ -11,7 +11,7 @@ Detect new Lumine releases on launch and notify when an update is available.
 
 ## Installation
 
-To install `lumine-updater` search for _lumine-updater_ in the Install pane of the Lumine settings or run `lumine --install lumine-code/lumine-updater`.
+To install `lumine-updater` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/lumine-updater`.
 
 ## Commands
 
