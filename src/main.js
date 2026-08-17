@@ -10,14 +10,20 @@ class LumineUpdater {
 
     this.disposables.add(
       lumine.commands.add("lumine-workspace", {
-        "lumine-updater:check-for-update": () => {
-          this.checkForUpdates({ manual: true }).catch((error) =>
-            console.warn("Lumine update check failed:", error),
-          );
+        "lumine-updater:check-for-update": {
+          description: "Ask now whether a newer release of the editor exists.",
+          didDispatch: () => {
+            this.checkForUpdates({ manual: true }).catch((error) =>
+              console.warn("Lumine update check failed:", error),
+            );
+          },
         },
-        "lumine-updater:clear-cache": () => {
-          this.cache.empty("last-update-check");
-          this.cache.empty(`installMethod.${lumine.application.getVersion()}`);
+        "lumine-updater:clear-cache": {
+          description: "Discard what the last update check remembered.",
+          didDispatch: () => {
+            this.cache.empty("last-update-check");
+            this.cache.empty(`installMethod.${lumine.application.getVersion()}`);
+          },
         },
       }),
     );
