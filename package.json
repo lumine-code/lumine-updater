@@ -37,9 +37,6 @@
       "default": true
     }
   },
-  "dependencies": {
-    "shelljs": "^0.10.0"
-  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.11.0",

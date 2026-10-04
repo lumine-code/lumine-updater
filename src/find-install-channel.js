@@ -1,12 +1,17 @@
 const Registry = require("./win-registry.js");
-const shell = require("shelljs");
+const childProcess = require("child_process");
 const fs = require("fs");
 
-// https://github.com/shelljs/shelljs/wiki/Electron-compatibility
-// ShellJS is not totally compatible within Electron.
-// We may need to look at running this within a task, but otherwise this should be
-// sufficient to get `exec` working
-shell.config.execPath = shell.which("node").toString();
+function commandIncludes(command, args, text) {
+  return new Promise((resolve) => {
+    childProcess.execFile(
+      command,
+      args,
+      { shell: false, windowsHide: true, timeout: 10_000 },
+      (error, stdout) => resolve(!error && stdout.includes(text)),
+    );
+  });
+}
 
 function windows_isUserInstalled() {
   return new Promise((resolve, reject) => {
@@ -43,80 +48,28 @@ function windows_isMachineInstalled() {
 }
 
 function windows_chocoInstalled() {
-  if (!shell.which("choco")) {
-    return false;
-  }
-
-  let chocoCheck = shell.exec("choco list --local-only");
-
-  if (chocoCheck.code !== 0) {
-    return false;
-  }
-
-  return chocoCheck.stdout.includes("lumine");
+  return commandIncludes("choco", ["list", "--local-only"], "lumine");
 }
 
 function windows_wingetInstalled() {
-  if (!shell.which("winget")) {
-    return false;
-  }
-
-  let wingetCheck = shell.exec("winget show Lumine");
-
-  if (wingetCheck.code !== 0) {
-    return false;
-  }
-
-  return wingetCheck.stdout.includes("Lumine");
+  return commandIncludes("winget", ["show", "Lumine"], "Lumine");
 }
 
 function linux_macos_homebrewInstalled() {
-  if (!shell.which("brew")) {
-    return false;
-  }
-
-  let homebrewCheck = shell.exec("brew list 'lumine'");
-
-  if (homebrewCheck.code !== 0) {
-    return false;
-  }
-
-  return homebrewCheck.stdout.includes("lumine");
+  return commandIncludes("brew", ["list", "lumine"], "lumine");
 }
 
-function linux_nixInstalled() {
-  if (!fs.existsSync("/nix/store")) {
+async function linux_nixInstalled() {
+  try {
+    const entries = await fs.promises.readdir("/nix/store");
+    return entries.some((entry) => entry.endsWith("lumine.nemo_action"));
+  } catch {
     return false;
   }
-
-  if (!shell.which("find")) {
-    // A little dishonest, but we need this to check if it exists so..
-    return false;
-  }
-
-  shell.cd("/nix/store");
-
-  let nixCheck = shell.exec('find -maxdepth 1 -name "*lumine.nemo_action"');
-
-  if (nixCheck.code !== 0) {
-    return false;
-  }
-
-  return nixCheck.stdout.includes("lumine.nemo_action");
 }
 
 function linux_debGetInstalled() {
-  if (!shell.which("deb-get")) {
-    return false;
-  }
-
-  let debGetCheck = shell.exec("deb-get list --installed");
-
-  if (debGetCheck.code !== 0) {
-    return false;
-  }
-
-  return debGetCheck.stdout.includes("lumine");
+  return commandIncludes("deb-get", ["list", "--installed"], "lumine");
 }
 
 function linux_flatpakInstalled() {
