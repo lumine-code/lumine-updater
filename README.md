@@ -2,6 +2,8 @@
 
 Detect new Lumine releases on launch and notify when an update is available.
 
+Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/pulsar-updater`).
+
 ## Features
 
 - **Launch check**: checks GitHub for new Lumine releases when the editor starts.
