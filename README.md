@@ -22,6 +22,10 @@ Commands available in `lumine-workspace`:
 - `lumine-updater:check-for-update`: check for updates and notify if a newer version is available,
 - `lumine-updater:clear-cache`: clear the cached update state and re-enable suppressed checks.
 
+## Services
+
+- `background-tips.provider`: provided to explain manual release checks in the empty workspace.
+
 ## Contributing
 
 Got ideas to make this package better, found a bug, or want to help add new features? Just drop your thoughts on GitHub. Any feedback is welcome!

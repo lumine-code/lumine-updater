@@ -4,9 +4,20 @@ let findInstallMethod;
 let findNewestRelease;
 
 class LumineUpdater {
+  provideBackgroundTips() {
+    return {
+      packageName: "lumine-updater",
+      tips: [
+        "{% if keys['lumine-updater:check-for-update'] %}You can check for a newer Lumine release with {{ 'lumine-updater:check-for-update' | keystroke }}{% else %}You can check for a newer Lumine release with Lumine Updater from the command palette.{% endif %}",
+      ],
+    };
+  }
+
   activate() {
     this.disposables = new CompositeDisposable();
     this.cache = require("./cache.js");
+    this.currentCheck = null;
+    this.notification = null;
 
     this.disposables.add(
       lumine.commands.add("lumine-workspace", {
@@ -45,37 +56,70 @@ class LumineUpdater {
   }
 
   deactivate() {
-    this.disposables.dispose();
+    const owner = this.disposables;
+    this.disposables = null;
+    this.currentCheck?.controller.abort();
+    this.currentCheck = null;
+    owner?.dispose();
+    this.notification = null;
     this.cache = null;
   }
 
-  async findNewestRelease() {
+  async findNewestRelease(options) {
     findNewestRelease ??= require("./find-newest-release.js");
-    return findNewestRelease();
+    return findNewestRelease(options);
+  }
+
+  async findInstallMethod() {
+    findInstallMethod ??= require("./find-install-method.js");
+    return findInstallMethod();
+  }
+
+  beginCheck(manual = false) {
+    this.currentCheck?.controller.abort();
+    return (this.currentCheck = {
+      owner: this.disposables,
+      cache: this.cache,
+      controller: new AbortController(),
+      manual,
+    });
+  }
+
+  isCurrentCheck(check) {
+    return (
+      this.disposables != null &&
+      this.disposables === check.owner &&
+      this.currentCheck === check &&
+      !check.controller.signal.aborted
+    );
   }
 
   async checkForUpdates({ manual = false } = {}) {
-    let cachedUpdateCheck = this.cache.getCacheItem("last-update-check");
+    if (!this.disposables) return;
+    const check = this.beginCheck(manual);
+    try {
+      const latestVersion = await this.findNewestRelease({ signal: check.controller.signal });
+      if (!this.isCurrentCheck(check)) return;
+      // A dismissal can happen while the network request is pending.
+      const cachedUpdateCheck = check.cache.getCacheItem("last-update-check");
+      const shouldUpdate = !lumine.application.versionSatisfies(`>= ${latestVersion}`);
 
-    // Null means that there is no previous check, or the last check expired
-    let latestVersion = await this.findNewestRelease();
-    let shouldUpdate = !lumine.application.versionSatisfies(`>= ${latestVersion}`);
-
-    if (cachedUpdateCheck?.latestVersion === latestVersion && !cachedUpdateCheck?.shouldUpdate) {
-      // The user has already been notified about this version and told us not
-      // to notify them again until the next release.
-      if (manual) {
-        await this.notifyAboutUpdate(latestVersion);
+      if (cachedUpdateCheck?.latestVersion === latestVersion && !cachedUpdateCheck?.shouldUpdate) {
+        if (manual) await this.notifyAboutUpdate(latestVersion);
+        return;
       }
-      return;
-    }
 
-    if (shouldUpdate) {
-      await this.notifyAboutUpdate(latestVersion);
-    } else {
-      // This can be a no-op or something that generates an actual notification
-      // based on how the update check was invoked.
-      await this.notifyAboutCurrent(latestVersion, manual);
+      if (shouldUpdate) await this.notifyAboutUpdate(latestVersion);
+      else await this.notifyAboutCurrent(latestVersion, manual);
+    } catch (error) {
+      if (!this.isCurrentCheck(check)) return;
+      if (manual) {
+        lumine.notifications.addWarning("Unable to check for Lumine updates.", {
+          detail: error.message,
+          dismissable: true,
+        });
+      }
+      throw error;
     }
   }
 
@@ -85,20 +129,18 @@ class LumineUpdater {
   }
 
   async notifyAboutUpdate(latestVersion) {
-    this.cache.setCacheItem("last-update-check", {
-      latestVersion: latestVersion,
-      shouldUpdate: true,
-    });
+    if (!this.disposables) return;
+    const check = this.currentCheck ?? this.beginCheck();
+    const installKey = `installMethod.${lumine.application.getVersion()}`;
+    const installMethod = check.cache.getCacheItem(installKey) ?? (await this.findInstallMethod());
+    if (!this.isCurrentCheck(check)) return;
+    const dismissal = check.cache.getCacheItem("last-update-check");
+    if (!check.manual && dismissal?.latestVersion === latestVersion && !dismissal.shouldUpdate)
+      return;
+    check.cache.setCacheItem("last-update-check", { latestVersion, shouldUpdate: true });
+    check.cache.setCacheItem(installKey, installMethod);
 
-    findInstallMethod ??= require("./find-install-method.js");
-
-    let installMethod =
-      this.cache.getCacheItem(`installMethod.${lumine.application.getVersion()}`) ??
-      (await findInstallMethod());
-
-    this.cache.setCacheItem(`installMethod.${lumine.application.getVersion()}`, installMethod);
-
-    let objButtonForInstallMethod = this.getObjButtonForInstallMethod(installMethod);
+    let objButtonForInstallMethod = this.getObjButtonForInstallMethod(installMethod, latestVersion);
     let notificationDetailText = this.getNotificationText(installMethod, latestVersion);
 
     // Notification text of `null` means that we shouldn't show a notification
@@ -114,6 +156,7 @@ class LumineUpdater {
         {
           text: "Dismiss this Version",
           onDidClick: () => {
+            if (this.notification !== notification) return;
             this.ignoreForThisVersion(latestVersion);
             notification.dismiss();
           },
@@ -121,6 +164,7 @@ class LumineUpdater {
         {
           text: "Dismiss until next launch",
           onDidClick: () => {
+            if (this.notification !== notification) return;
             this.ignoreUntilNextLaunch();
             notification.dismiss();
           },
@@ -130,10 +174,35 @@ class LumineUpdater {
         typeof objButtonForInstallMethod === "object" && objButtonForInstallMethod,
       ],
     });
+    if (!this.isCurrentCheck(check)) {
+      notification.dismiss();
+      return;
+    }
+    this.ownNotification(notification, check);
+  }
+
+  ownNotification(notification, check) {
+    const owner = this.disposables;
+    this.notification?.dismiss();
+    if (!owner || this.disposables !== owner || (check && !this.isCurrentCheck(check))) {
+      notification.dismiss();
+      return;
+    }
+    this.notification = notification;
+    const cleanup = new CompositeDisposable();
+    cleanup.add(
+      notification.onDidDismiss(() => {
+        if (this.notification === notification) this.notification = null;
+        owner.remove(cleanup);
+        cleanup.dispose();
+      }),
+      new Disposable(() => notification.dismiss()),
+    );
+    owner.add(cleanup);
   }
 
   ignoreForThisVersion(version) {
-    this.cache.setCacheItem("last-update-check", {
+    this.cache?.setCacheItem("last-update-check", {
       latestVersion: version,
       shouldUpdate: false,
     });
@@ -141,7 +210,7 @@ class LumineUpdater {
 
   ignoreUntilNextLaunch() {
     // emptying the cache, will cause the next check to succeed
-    this.cache.empty("last-update-check");
+    this.cache?.empty("last-update-check");
   }
 
   getNotificationText(installMethod, latestVersion) {
@@ -189,10 +258,14 @@ class LumineUpdater {
     return returnText;
   }
 
-  getObjButtonForInstallMethod(installMethod) {
+  getObjButtonForInstallMethod(
+    installMethod,
+    latestVersion = this.cache?.getCacheItem("last-update-check")?.latestVersion,
+  ) {
+    const owner = this.disposables;
     const openWebGitHub = (e) => {
       e.preventDefault();
-      let latestVersion = this.cache.getCacheItem("last-update-check")?.latestVersion;
+      if (!owner || this.disposables !== owner) return;
       let tagSegment = latestVersion ? `tag/${latestVersion}` : "";
       lumine.shell.openExternal(`https://github.com/lumine-code/lumine/releases/${tagSegment}`);
     };

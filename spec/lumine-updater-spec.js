@@ -105,4 +105,174 @@ describe("LumineUpdater", () => {
       expect(pack.mainModule.notifyAboutCurrent).not.toHaveBeenCalled();
     });
   });
+
+  describe("pending checks and notifications", () => {
+    let updater, cache;
+
+    function deferred() {
+      let resolve;
+      const promise = new Promise((done) => {
+        resolve = done;
+      });
+      return { promise, resolve };
+    }
+
+    beforeEach(() => {
+      updater = pack.mainModule;
+      cache = updater.cache;
+      cache.empty(`installMethod.${lumine.application.getVersion()}`);
+    });
+
+    afterEach(() => cache.empty(`installMethod.${lumine.application.getVersion()}`));
+
+    it("ignores a release response from a deactivated package", async () => {
+      const response = deferred();
+      spyOn(updater, "findNewestRelease").and.returnValue(response.promise);
+      const notify = spyOn(updater, "notifyAboutUpdate").and.callThrough();
+      const pending = updater.checkForUpdates();
+      await lumine.packages.deactivatePackage("lumine-updater");
+      response.resolve("2.0.0");
+      await expectAsync(pending).toBeResolved();
+      expect(notify).not.toHaveBeenCalled();
+    });
+
+    it("keeps the newer check when release responses arrive out of order", async () => {
+      const response = deferred();
+      spyOn(updater, "findNewestRelease").and.returnValues(
+        response.promise,
+        Promise.resolve("3.0.0"),
+      );
+      const notify = spyOn(updater, "notifyAboutUpdate").and.resolveTo();
+      const first = updater.checkForUpdates();
+      await updater.checkForUpdates();
+      response.resolve("2.0.0");
+      await first;
+      expect(notify).toHaveBeenCalledOnceWith("3.0.0");
+    });
+
+    it("honors a version dismissal made while its release request is pending", async () => {
+      const response = deferred();
+      spyOn(updater, "findNewestRelease").and.returnValue(response.promise);
+      const notify = spyOn(updater, "notifyAboutUpdate").and.resolveTo();
+      const pending = updater.checkForUpdates();
+      updater.ignoreForThisVersion("2.0.0");
+      response.resolve("2.0.0");
+      await pending;
+      expect(notify).not.toHaveBeenCalled();
+    });
+
+    it("does not cache or notify after installation discovery outlives deactivation", async () => {
+      const response = deferred();
+      spyOn(updater, "findInstallMethod").and.returnValue(response.promise);
+      const write = spyOn(cache, "setCacheItem").and.callThrough();
+      const info = spyOn(lumine.notifications, "addInfo");
+      const pending = updater.notifyAboutUpdate("2.0.0");
+      await lumine.packages.deactivatePackage("lumine-updater");
+      response.resolve({ installMethod: "Manual Installation" });
+      await expectAsync(pending).toBeResolved();
+      expect(write).not.toHaveBeenCalled();
+      expect(info).not.toHaveBeenCalled();
+    });
+
+    it("honors a dismissal while installation discovery is pending", async () => {
+      const response = deferred();
+      spyOn(updater, "findInstallMethod").and.returnValue(response.promise);
+      const info = spyOn(lumine.notifications, "addInfo");
+      const pending = updater.notifyAboutUpdate("2.0.0");
+      updater.ignoreForThisVersion("2.0.0");
+      response.resolve({ installMethod: "Manual Installation" });
+      await pending;
+      expect(info).not.toHaveBeenCalled();
+      expect(cache.getCacheItem("last-update-check").shouldUpdate).toBe(false);
+    });
+
+    it("aborts a running network request when the package deactivates", async () => {
+      let signal;
+      spyOn(global, "fetch").and.callFake((_url, options) => {
+        signal = options.signal;
+        return new Promise((_resolve, reject) =>
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true }),
+        );
+      });
+      const warning = spyOn(lumine.notifications, "addWarning");
+      const pending = updater.checkForUpdates({ manual: true });
+      await lumine.packages.deactivatePackage("lumine-updater");
+      expect(signal.aborted).toBe(true);
+      await expectAsync(pending).toBeResolved();
+      expect(warning).not.toHaveBeenCalled();
+    });
+
+    async function showUpdate(version) {
+      cache.setCacheItem(`installMethod.${lumine.application.getVersion()}`, {
+        installMethod: "Manual Installation",
+      });
+      spyOn(updater, "getNotificationText").and.returnValue("A release is available.");
+      const info = spyOn(lumine.notifications, "addInfo").and.callThrough();
+      await updater.notifyAboutUpdate(version);
+      return info.calls.mostRecent().returnValue;
+    }
+
+    it("removes its notification and safely retires its buttons on deactivation", async () => {
+      const notification = await showUpdate("2.0.0");
+      const click = { preventDefault() {} };
+      const open = spyOn(lumine.shell, "openExternal").and.resolveTo();
+      await lumine.packages.deactivatePackage("lumine-updater");
+      expect(notification.isDismissed()).toBe(true);
+      for (const button of notification.getOptions().buttons) {
+        if (button) expect(() => button.onDidClick(click)).not.toThrow();
+      }
+      expect(open).not.toHaveBeenCalled();
+    });
+
+    it("keeps the download URL bound to the release its notification describes", async () => {
+      const notification = await showUpdate("2.0.0");
+      cache.setCacheItem("last-update-check", { latestVersion: "3.0.0", shouldUpdate: true });
+      const open = spyOn(lumine.shell, "openExternal").and.resolveTo();
+      notification
+        .getOptions()
+        .buttons.at(-1)
+        .onDidClick({ preventDefault() {} });
+      expect(open).toHaveBeenCalledOnceWith(
+        "https://github.com/lumine-code/lumine/releases/tag/2.0.0",
+      );
+    });
+
+    it("retires a new notification when dismissing its predecessor deactivates the package", async () => {
+      const first = await showUpdate("2.0.0");
+      first.onDidDismiss(() => updater.deactivate());
+      await expectAsync(updater.notifyAboutUpdate("3.0.0")).toBeResolved();
+      const newest = lumine.notifications.addInfo.calls.mostRecent().returnValue;
+      expect(first.isDismissed()).toBe(true);
+      expect(newest.isDismissed()).toBe(true);
+      expect(updater.notification).toBeNull();
+    });
+
+    it("removes owned notification cleanup after each dismissal", async () => {
+      cache.setCacheItem(`installMethod.${lumine.application.getVersion()}`, {
+        installMethod: "Manual Installation",
+      });
+      spyOn(updater, "getNotificationText").and.returnValue("A release is available.");
+      const count = updater.disposables.disposables.size;
+      await updater.notifyAboutUpdate("2.0.0");
+      const first = updater.notification;
+      await updater.notifyAboutUpdate("3.0.0");
+      expect(first.isDismissed()).toBe(true);
+      expect(updater.disposables.disposables.size).toBe(count + 1);
+      updater.notification.dismiss();
+      expect(updater.notification).toBeNull();
+      expect(updater.disposables.disposables.size).toBe(count);
+    });
+
+    it("reports a failed manual check without claiming the editor is up to date", async () => {
+      spyOn(global, "fetch").and.rejectWith(new Error("Offline"));
+      const info = spyOn(lumine.notifications, "addInfo");
+      const warning = spyOn(lumine.notifications, "addWarning");
+      await expectAsync(updater.checkForUpdates({ manual: true })).toBeRejectedWithError("Offline");
+      expect(info).not.toHaveBeenCalled();
+      expect(warning).toHaveBeenCalledWith("Unable to check for Lumine updates.", {
+        detail: "Offline",
+        dismissable: true,
+      });
+    });
+  });
 });

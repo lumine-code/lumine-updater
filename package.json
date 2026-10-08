@@ -29,6 +29,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
+  "providedServices": {
+    "background-tips.provider": {
+      "versions": {
+        "1.0.0": "provideBackgroundTips"
+      }
+    }
+  },
   "configSchema": {
     "checkForUpdatesOnLaunch": {
       "title": "Check For Updates On Launch",
