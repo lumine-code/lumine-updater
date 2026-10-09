@@ -104,7 +104,11 @@ class LumineUpdater {
       const cachedUpdateCheck = check.cache.getCacheItem("last-update-check");
       const shouldUpdate = !lumine.application.versionSatisfies(`>= ${latestVersion}`);
 
-      if (cachedUpdateCheck?.latestVersion === latestVersion && !cachedUpdateCheck?.shouldUpdate) {
+      if (
+        shouldUpdate &&
+        cachedUpdateCheck?.latestVersion === latestVersion &&
+        !cachedUpdateCheck?.shouldUpdate
+      ) {
         if (manual) await this.notifyAboutUpdate(latestVersion);
         return;
       }
