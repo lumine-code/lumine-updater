@@ -10,18 +10,33 @@ module.exports = async function findNewestRelease({ signal: requestedSignal } = 
     },
   };
   const repositoryUrl = "https://api.github.com/repos/lumine-code/lumine";
+
+  // /latest answers 404 when there is no full release, which Chromium logs
+  // even when handled. The list answers 200 with [] for that normal state.
+  const perPage = 100;
+  for (let page = 1; ; page++) {
+    const releases = await fetch(
+      `${repositoryUrl}/releases?per_page=${perPage}&page=${page}`,
+      request,
+    );
+    signal.throwIfAborted();
+    if (!releases.ok) throw new Error(`GitHub release lookup failed with HTTP ${releases.status}.`);
+
+    const body = await releases.json();
+    signal.throwIfAborted();
+    if (
+      !Array.isArray(body) ||
+      body.some((release) => !release || typeof release !== "object" || Array.isArray(release))
+    )
+      throw new Error("GitHub returned an invalid release list.");
+
+    if (body.some((release) => release.prerelease !== true && release.draft !== true)) break;
+    if (body.length < perPage) return "0.0.0";
+  }
+
+  // Keep GitHub's latest designation authoritative, including backports.
   const res = await fetch(`${repositoryUrl}/releases/latest`, request);
   signal.throwIfAborted();
-
-  // A missing full release and an unavailable repository both answer 404.
-  // Preserve the no-release sentinel only after confirming the repository.
-  if (res.status === 404) {
-    const repository = await fetch(repositoryUrl, request);
-    signal.throwIfAborted();
-    if (!repository.ok)
-      throw new Error(`GitHub repository lookup failed with HTTP ${repository.status}.`);
-    return "0.0.0";
-  }
   if (!res.ok) {
     throw new Error(`GitHub release lookup failed with HTTP ${res.status}.`);
   }

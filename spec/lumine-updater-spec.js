@@ -69,6 +69,39 @@ describe("LumineUpdater", () => {
     });
   });
 
+  describe("when no full release has been published", () => {
+    let updater, request, info, warning;
+
+    beforeEach(() => {
+      updater = pack.mainModule;
+      request = spyOn(global, "fetch").and.resolveTo({
+        ok: true,
+        status: 200,
+        json: async () => [],
+      });
+      info = spyOn(lumine.notifications, "addInfo");
+      warning = spyOn(lumine.notifications, "addWarning");
+    });
+
+    it("keeps an automatic check quiet", async () => {
+      await expectAsync(updater.checkForUpdates()).toBeResolved();
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(info).not.toHaveBeenCalled();
+      expect(warning).not.toHaveBeenCalled();
+      expect(updater.notification).toBeNull();
+    });
+
+    it("reports a manual check as current without a warning", async () => {
+      await expectAsync(updater.checkForUpdates({ manual: true })).toBeResolved();
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(info).toHaveBeenCalledOnceWith("Lumine is already up to date.", {
+        dismissable: true,
+      });
+      expect(warning).not.toHaveBeenCalled();
+      expect(updater.notification).toBeNull();
+    });
+  });
+
   describe("when the user tells us to ignore until the next version", () => {
     let latestVersion = "1.0.6";
     beforeEach(() => {
