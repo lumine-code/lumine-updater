@@ -1,0 +1,17 @@
+{
+  "title": "lumine-updater",
+  "description": "Check the published Lumine releases and read the current update status.",
+  "recordedOn": "2026-10-13",
+  "sourceRevision": "f6f6b5ddeef7364c62bb7cb2d1aec16a1431bf77",
+  "mode": "normal",
+  "fontSettings": "default",
+  "themeSourceRevision": "6564a9e21899b5541e9c8f8006f9be6d6d72e6ad",
+  "images": [
+    {
+      "file": "demo.png",
+      "label": "Check the published Lumine releases and read the current update status.",
+      "width": 1100,
+      "height": 450
+    }
+  ]
+}

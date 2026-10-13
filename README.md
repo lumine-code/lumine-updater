@@ -11,6 +11,8 @@ Fork of [pulsar-edit/pulsar](https://github.com/pulsar-edit/pulsar) (`packages/p
 - **Install detection**: recognizes the installation method and tailors update guidance accordingly.
 - **Manual checks**: trigger an update check on demand from the command palette.
 
+![Check the published Lumine releases and read the current update status.](.github/demo.png)
+
 ## Installation
 
 To install `lumine-updater` search for it in the Install pane of the Lumine settings, or run the command `lumine --install lumine-code/lumine-updater`.
