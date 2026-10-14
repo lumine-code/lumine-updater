@@ -1,17 +1,66 @@
 {
   "title": "lumine-updater",
   "description": "Check the published Lumine releases and read the current update status.",
-  "recordedOn": "2026-10-13",
-  "sourceRevision": "f6f6b5ddeef7364c62bb7cb2d1aec16a1431bf77",
+  "recordedOn": "2026-10-14",
+  "sourceRevision": "a1f460cdc4177d73bab42d7c44dc502f0d7f4b96",
+  "themeSourceRevision": "7fbd047a87ecf1367c896b19ff270cdc28d319f7",
   "mode": "normal",
   "fontSettings": "default",
-  "themeSourceRevision": "6564a9e21899b5541e9c8f8006f9be6d6d72e6ad",
+  "scenario": "demo.js",
+  "recipeHash": "044a50896db8354f4369a0e6c6c34972f99203ac2d202d5975091f7f48710ca4",
+  "environment": {
+    "platform": "win32",
+    "arch": "x64",
+    "electron": "44.7.0",
+    "chrome": "152.0.7977.130",
+    "devicePixelRatio": 1,
+    "locale": "en-GB",
+    "fontFamily": "Fira Code, Menlo, DejaVu Sans Mono, Consolas, monospace",
+    "fontSize": 14,
+    "themes": ["one-day-syntax", "one-day-ui"]
+  },
+  "viewport": { "width": 1100, "height": 450 },
+  "cornerRadius": 10,
+  "sources": {
+    "editor": {
+      "revision": "ca7198ebc05410bb29a14259434e77c94a714b24",
+      "dirty": false,
+      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "package": {
+      "revision": "a1f460cdc4177d73bab42d7c44dc502f0d7f4b96",
+      "dirty": false,
+      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "lumine-updater": {
+      "revision": "a1f460cdc4177d73bab42d7c44dc502f0d7f4b96",
+      "dirty": false,
+      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "language-gfm": {
+      "revision": "be723ccf806fdd4a2a06638f6e881c09a53b4409",
+      "dirty": false,
+      "workingTreeHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "one-theme": {
+      "revision": "7fbd047a87ecf1367c896b19ff270cdc28d319f7",
+      "dirty": true,
+      "workingTreeHash": "117be43b362996c5b12e2e77be3b04736978cd42193eefe8ca7da3a2a0bdcdb7"
+    }
+  },
+  "fixtures": [
+    {
+      "file": "updater/README.md",
+      "sha256": "f87f8670cf71375c1149234623fe65d26ce129ef50bd7eb9bcfc11463d513e04"
+    }
+  ],
   "images": [
     {
       "file": "demo.png",
       "label": "Check the published Lumine releases and read the current update status.",
       "width": 1100,
-      "height": 450
+      "height": 450,
+      "sha256": "b7b740fcacb53117c654993178ba4a3e14ad055e0fca9b2a87331ffe0cef949d"
     }
   ]
 }
