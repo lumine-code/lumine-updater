@@ -18,7 +18,8 @@
   "main": "./src/main.js",
   "files": [
     "spec",
-    "src"
+    "src",
+    "THIRD_PARTY_NOTICES"
   ],
   "engines": {
     "lumine": "^1.0.0"
