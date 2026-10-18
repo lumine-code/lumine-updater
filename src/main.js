@@ -23,11 +23,7 @@ class LumineUpdater {
       lumine.commands.add("lumine-workspace", {
         "lumine-updater:check-for-update": {
           description: "Ask now whether a newer release of the editor exists.",
-          didDispatch: () => {
-            this.checkForUpdates({ manual: true }).catch((error) =>
-              console.warn("Lumine update check failed:", error),
-            );
-          },
+          didDispatch: () => this.checkForUpdates({ manual: true }),
         },
         "lumine-updater:clear-cache": {
           description: "Discard what the last update check remembered.",
@@ -43,14 +39,7 @@ class LumineUpdater {
       // An update check isn't urgent and makes a network request. Defer it off
       // the activation path so it runs once the window is idle instead of
       // blocking startup.
-      const handle = window.requestIdleCallback(
-        () => {
-          this.checkForUpdates().catch((error) =>
-            console.warn("Lumine update check failed:", error),
-          );
-        },
-        { timeout: 5000 },
-      );
+      const handle = window.requestIdleCallback(() => this.checkForUpdates(), { timeout: 5000 });
       this.disposables.add(new Disposable(() => window.cancelIdleCallback(handle)));
     }
   }
@@ -123,7 +112,6 @@ class LumineUpdater {
           dismissable: true,
         });
       }
-      throw error;
     }
   }
 

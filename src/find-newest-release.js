@@ -1,3 +1,5 @@
+const releaseRequest = require("./release-request.js");
+
 module.exports = async function findNewestRelease({ signal: requestedSignal } = {}) {
   const timeout = AbortSignal.timeout(30000);
   const signal = requestedSignal ? AbortSignal.any([requestedSignal, timeout]) : timeout;
@@ -11,11 +13,11 @@ module.exports = async function findNewestRelease({ signal: requestedSignal } = 
   };
   const repositoryUrl = "https://api.github.com/repos/lumine-code/lumine";
 
-  // /latest answers 404 when there is no full release, which Chromium logs
-  // even when handled. The list answers 200 with [] for that normal state.
+  // /latest answers 404 when there is no full release. The list answers 200
+  // with [] so that normal state stays distinct from an unavailable repository.
   const perPage = 100;
   for (let page = 1; ; page++) {
-    const releases = await fetch(
+    const releases = await releaseRequest.fetch(
       `${repositoryUrl}/releases?per_page=${perPage}&page=${page}`,
       request,
     );
@@ -35,7 +37,7 @@ module.exports = async function findNewestRelease({ signal: requestedSignal } = 
   }
 
   // Keep GitHub's latest designation authoritative, including backports.
-  const res = await fetch(`${repositoryUrl}/releases/latest`, request);
+  const res = await releaseRequest.fetch(`${repositoryUrl}/releases/latest`, request);
   signal.throwIfAborted();
   if (!res.ok) {
     throw new Error(`GitHub release lookup failed with HTTP ${res.status}.`);

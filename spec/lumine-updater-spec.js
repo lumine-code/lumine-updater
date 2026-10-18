@@ -70,22 +70,18 @@ describe("LumineUpdater", () => {
   });
 
   describe("when no full release has been published", () => {
-    let updater, request, info, warning;
+    let updater, info, warning;
 
     beforeEach(() => {
       updater = pack.mainModule;
-      request = spyOn(global, "fetch").and.resolveTo({
-        ok: true,
-        status: 200,
-        json: async () => [],
-      });
+      spyOn(updater, "findNewestRelease").and.resolveTo("0.0.0");
       info = spyOn(lumine.notifications, "addInfo");
       warning = spyOn(lumine.notifications, "addWarning");
     });
 
     it("keeps an automatic check quiet", async () => {
       await expectAsync(updater.checkForUpdates()).toBeResolved();
-      expect(request).toHaveBeenCalledTimes(1);
+      expect(updater.findNewestRelease).toHaveBeenCalledTimes(1);
       expect(info).not.toHaveBeenCalled();
       expect(warning).not.toHaveBeenCalled();
       expect(updater.notification).toBeNull();
@@ -93,13 +89,61 @@ describe("LumineUpdater", () => {
 
     it("reports a manual check as current without a warning", async () => {
       await expectAsync(updater.checkForUpdates({ manual: true })).toBeResolved();
-      expect(request).toHaveBeenCalledTimes(1);
+      expect(updater.findNewestRelease).toHaveBeenCalledTimes(1);
       expect(info).toHaveBeenCalledOnceWith("Lumine is already up to date.", {
         dismissable: true,
       });
       expect(warning).not.toHaveBeenCalled();
       expect(updater.notification).toBeNull();
     });
+  });
+
+  describe("when the release lookup fails", () => {
+    let updater, info, warning, log;
+
+    beforeEach(() => {
+      updater = pack.mainModule;
+      spyOn(updater, "findNewestRelease").and.rejectWith(new Error("Offline"));
+      info = spyOn(lumine.notifications, "addInfo");
+      warning = spyOn(lumine.notifications, "addWarning");
+      log = spyOn(console, "warn");
+    });
+
+    it("silently completes an automatic check without changing the cached release", async () => {
+      const write = spyOn(updater.cache, "setCacheItem");
+      await expectAsync(updater.checkForUpdates()).toBeResolved();
+      expect(info).not.toHaveBeenCalled();
+      expect(warning).not.toHaveBeenCalled();
+      expect(log).not.toHaveBeenCalled();
+      expect(write).not.toHaveBeenCalled();
+    });
+
+    it("reports a failed manual command once without logging or claiming the editor is current", async () => {
+      const check = spyOn(updater, "checkForUpdates").and.callThrough();
+      lumine.commands.dispatch(workspaceElement, "lumine-updater:check-for-update");
+      await expectAsync(check.calls.mostRecent().returnValue).toBeResolved();
+      expect(info).not.toHaveBeenCalled();
+      expect(warning).toHaveBeenCalledOnceWith("Unable to check for Lumine updates.", {
+        detail: "Offline",
+        dismissable: true,
+      });
+      expect(log).not.toHaveBeenCalled();
+    });
+  });
+
+  it("silently completes a failed launch check scheduled while the window is idle", async () => {
+    await lumine.packages.deactivatePackage("lumine-updater");
+    const idle = spyOn(window, "requestIdleCallback").and.returnValue(0);
+    spyOn(window, "cancelIdleCallback");
+    lumine.config.set("lumine-updater.checkForUpdatesOnLaunch", true);
+    pack = await lumine.packages.activatePackage("lumine-updater");
+    const updater = pack.mainModule;
+    spyOn(updater, "findNewestRelease").and.rejectWith(new Error("Connection timed out"));
+    const warning = spyOn(lumine.notifications, "addWarning");
+    const log = spyOn(console, "warn");
+    await expectAsync(idle.calls.mostRecent().args[0]()).toBeResolved();
+    expect(warning).not.toHaveBeenCalled();
+    expect(log).not.toHaveBeenCalled();
   });
 
   describe("when the user tells us to ignore until the next version", () => {
@@ -221,7 +265,7 @@ describe("LumineUpdater", () => {
 
     it("aborts a running network request when the package deactivates", async () => {
       let signal;
-      spyOn(global, "fetch").and.callFake((_url, options) => {
+      spyOn(updater, "findNewestRelease").and.callFake((options) => {
         signal = options.signal;
         return new Promise((_resolve, reject) =>
           signal.addEventListener("abort", () => reject(signal.reason), { once: true }),
@@ -294,18 +338,6 @@ describe("LumineUpdater", () => {
       updater.notification.dismiss();
       expect(updater.notification).toBeNull();
       expect(updater.disposables.disposables.size).toBe(count);
-    });
-
-    it("reports a failed manual check without claiming the editor is up to date", async () => {
-      spyOn(global, "fetch").and.rejectWith(new Error("Offline"));
-      const info = spyOn(lumine.notifications, "addInfo");
-      const warning = spyOn(lumine.notifications, "addWarning");
-      await expectAsync(updater.checkForUpdates({ manual: true })).toBeRejectedWithError("Offline");
-      expect(info).not.toHaveBeenCalled();
-      expect(warning).toHaveBeenCalledWith("Unable to check for Lumine updates.", {
-        detail: "Offline",
-        dismissable: true,
-      });
     });
   });
 });
