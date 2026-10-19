@@ -17,6 +17,7 @@
   "license": "MIT",
   "main": "./src/main.js",
   "files": [
+    "menus",
     "spec",
     "src",
     "THIRD_PARTY_NOTICES"

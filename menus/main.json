@@ -1,0 +1,33 @@
+{
+  "menu": [
+    {
+      "label": "App",
+      "submenu": [
+        {
+          "label": "Check for Lumine Updates",
+          "command": "lumine-updater:check-for-update",
+          "group": "updates",
+          "order": 10
+        }
+      ]
+    },
+    {
+      "label": "Packages",
+      "submenu": [
+        {
+          "label": "Lumine Updater",
+          "submenu": [
+            {
+              "label": "Check for Updates",
+              "command": "lumine-updater:check-for-update"
+            },
+            {
+              "label": "Clear Update Cache",
+              "command": "lumine-updater:clear-cache"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
